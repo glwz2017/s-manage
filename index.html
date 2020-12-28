@@ -81,30 +81,32 @@
 <script src="https://unpkg.com/element-ui/lib/index.js"></script>
 <script>
 window.onload = function () {
-
+  // 本示例才用的本地缓存模拟数据库  本地缓存使用可参考
+  // 本地缓存读取数据   localStorage.getItem("键名")
+  // 本地缓存写入数据 localStorage.setItem("键名","对象")
   new Vue({
-    el: '#app',
+    el: '#app',  // 挂载绑定 vue实例数据驱动的范围
     data: function () {
       return {
-        totalInfo: [],
-        search: '',
-        sid: -1,
-        isAdd: true,
-        isValid: true,
-        dialogFormVisible: false,
-        infoForm: {
-          stuId: '',
-          name: '',
-          subjects: '',
-          score: null
+        search: '', // 按条件查询的值 【学号 -- 姓名】
+        sid: -1, //当前更新编辑学员的id唯一标识
+        isAdd: true, // 确定按钮与更新按钮的切换标识
+        isValid: true, //表单用户输入数据，是否有效性标识
+        dialogFormVisible: false,  // 弹窗灰色遮层标识
+        infoForm: {     // 添加学员信息对象属性【可酌情添加与修改】
+          stuId: '', // 学号
+          name: '',  // 姓名
+          subjects: '', // 科目
+          score: null // 分数
         },
-        tableData: []
+        tableData: [] // 当前已入库的学员信息列表
       }
     },
     created: function () {
-      this.totalInfo = localStorage.getItem('userInfo') || []
+      console.log('vue 示例创建之后的生命周期 --- 系统即将运行...')
     },
     mounted: function () {
+      console.log('vue 挂载数据到页面的声明周期 --- 此时可以看到页面学员数据信息')
       this.showInfoFn() // 获取人员信息
     },
     methods: {
@@ -128,13 +130,14 @@ window.onload = function () {
         }
 
         if (this.isValid) {
-          let obj = {}
+          let obj = {}  // 收集当前表单学员信息抽象为一个对象，保存到数据库里
           obj.stuId = this.infoForm.stuId
           obj.name = this.infoForm.name
           obj.subjects = this.infoForm.subjects
           obj.score = this.infoForm.score
+          // JSON.stringify()与JSON.parse() 用户字符串与json数据化转换
           let tempData = JSON.parse(localStorage.getItem('userList')) || []
-          if (tempData.length === 0) {
+          if (tempData.length === 0) {  // 程序首次加载或数据为空时
             tempData.push(obj)
             localStorage.setItem('userList', JSON.stringify(tempData))
             this.$message({
@@ -163,11 +166,11 @@ window.onload = function () {
             })
             this.dialogFormVisible = false
             this.showInfoFn()
-          }
+          } // end if
         }
       },
       // 数据是否重复检查[针对学号]
-      uniqueFn: function (tempData, flag) {
+      uniqueFn: function (tempData) {
         let unique = false
         for (let i = 0; i < tempData.length; i++) {
           if (tempData[i].stuId === this.infoForm.stuId) {
@@ -187,28 +190,45 @@ window.onload = function () {
         this.dialogFormVisible = !this.dialogFormVisible
       },
       // 查询所有
-      searchAllFn: function (){
+      searchAllFn: function () {
         this.showInfoFn()
       },
       // 查询学员信息
       searchFn: function () {
-        this.tableData = []
-        let tempData = JSON.parse(localStorage.getItem('userList'))
-        let rowData = null
         if (this.search.trim() === '' || this.search.trim() === null) {
           this.$message({
             message: '请输入要查询的条件',
-            type: 'warning'
-          });
+            type: 'warning',
+            duration: 1000
+          })
           return false
         }
+        let tempData = JSON.parse(localStorage.getItem('userList')) || []
+        if (tempData.length === 0) {
+          this.$message({
+            message: '数据库为空，请先添加学员数据',
+            type: 'warning'
+          })
+          return false
+        }
+        let rowData = null // 暂存当前查询到的数据
         for (let i = 0; i < tempData.length; i++) {
-          if (tempData[i].stuId === this.search || tempData[i].name=== this.search) {
+          if (tempData[i].stuId === this.search || tempData[i].name === this.search) {
             rowData = tempData[i]
           }
         }
-        this.tableData.push(rowData)
-        this.search = ''
+        // 查询要点: 获取用户输入的查询条件，循环遍历总数据库，返回匹配的数据项
+        if (rowData === null) {
+          this.$message({
+            message: '未找到该学员 --- 请确认查询信息是否正确',
+            type: 'warning',
+            duration: 1000
+          })
+          return false
+        } else {
+          this.tableData = []
+          this.tableData.push(rowData)
+        }
       },
       // 显示学员信息
       showInfoFn: function () {
@@ -228,8 +248,10 @@ window.onload = function () {
       },
       // 更新学员弹窗
       updateInfoFn: function () {
+        // 当点击编辑按钮时候，获取当前所点击的学员学号与数据库里的作对比。
         let tempData = JSON.parse(localStorage.getItem('userList'))
         for (let i = 0; i < tempData.length; i++) {
+          // if 条件为 当前用户点击编辑的人员ID与已存库里的数据做对比
           if (tempData[i].stuId === this.$refs.updateBtn.$el.id) {
             tempData[i].name = this.infoForm.name
             tempData[i].subjects = this.infoForm.subjects
